@@ -1,0 +1,13 @@
+{
+  "$schema": "https://langgra.ph/schema.json",
+  "dependencies": ["."],
+  "graphs": {
+    "tool_calling": "./src/examples/tool_calling.py:agent_builder",
+    "parallelization": "./src/examples/parallelization.py:parallel_builder",
+    "mlb_single_agent_retriever": "./src/mlb_single_agent_retriever.py:graph",
+    "mlb_subagent_supervisor": "./src/mlb_subagent_supervisor.py:supervisor_agent",
+    "mlb_multi_agent_builtin_supervisor": "./src/mlb_multi_agent_builtin_supervisor.py:workflow"
+  },
+  "env": ".env",
+  "image_distro": "wolfi"
+}
