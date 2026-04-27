@@ -59,9 +59,9 @@ def _build_summary_table_html(analysis) -> str:
 def report_compiler(state: State) -> dict:
     """Assemble the final HTML report from all gathered materials."""
     # plan = state["research_plan"]
-    game_stats = state.get("game_stats", [])
+    # game_stats = state.get("game_stats", [])
     player_stats = state.get("player_stats", [])
-    head_to_head_stats = state.get("head_to_head_stats", [])
+    # head_to_head_stats = state.get("head_to_head_stats", [])
     llm_model = state.get("llm_model")
     sections = state.get("report_sections", {})
     charts = state.get("charts", [])
@@ -77,12 +77,12 @@ def report_compiler(state: State) -> dict:
     template_sections = []
 
     #first game info
-    for game_stat in game_stats:
-        game_stat_html = markdown.markdown(game_stat.content, extensions=['extra', 'codehilite'])
-        template_sections.append({
-            # "title": "Game Info",
-            "content": game_stat_html,
-        })
+    # for game_stat in game_stats:
+    #     game_stat_html = markdown.markdown(game_stat.content, extensions=['extra', 'codehilite'])
+    #     template_sections.append({
+    #         # "title": "Game Info",
+    #         "content": game_stat_html,
+    #     })
 
     #individual player stats
     # for title, content in sections.items():
@@ -95,12 +95,12 @@ def report_compiler(state: State) -> dict:
         })
 
     # head-to-head stats
-    for head_to_head_stat in head_to_head_stats:
-        head_to_head_stat_html = markdown.markdown(head_to_head_stat.content, extensions=['extra', 'codehilite'])
-        template_sections.append({
-            # "title": "Head-to-head Info",
-            "content": head_to_head_stat_html,
-        })
+    # for head_to_head_stat in head_to_head_stats:
+    #     head_to_head_stat_html = markdown.markdown(head_to_head_stat.content, extensions=['extra', 'codehilite'])
+    #     template_sections.append({
+    #         # "title": "Head-to-head Info",
+    #         "content": head_to_head_stat_html,
+    #     })
 
     # Collect unique sources from search results
     seen_urls: set[str] = set()
@@ -123,7 +123,8 @@ def report_compiler(state: State) -> dict:
     title = "Matchup Analysis Report"
     generated_datetime = datetime.datetime.now()
 
-    summary_message = state["messages"][-1].content if state["messages"] else ""
+    # summary_message = state["messages"][-1].content if state["messages"] else ""
+    summary_message = state["summary"] if state["summary"] else ""
     summary_html = markdown.markdown(summary_message, extensions=['extra', 'codehilite'])
 
     html = template.render(

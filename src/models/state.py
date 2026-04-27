@@ -22,10 +22,12 @@ class State(TypedDict):
     # all summarized player stats for the report, accumulated across multiple node calls
     player_stats: Annotated[list[str], add_messages]
     # all summarized head-to-head stats for the report, accumulated across multiple node calls
-    head_to_head_stats: Annotated[list[str], add_messages]
+    # head_to_head_stats: Annotated[list[str], add_messages]
     # all summarized game info stats for the report, accumulated across multiple node calls
-    game_stats: Annotated[list[str], add_messages]
+    # game_stats: Annotated[list[str], add_messages]
     llm_model: str
+    # executive summary
+    summary: AnyMessage
 
 # ---------------------------------------------------------------------------
 # Pydantic models — structured output schemas for LLM calls

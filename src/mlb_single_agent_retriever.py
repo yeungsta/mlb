@@ -83,41 +83,15 @@ def stat_retrieval(state: State):
 
 def matchup_synthesizer(state: State):
     """
-    You are an analyzer in the voice of Vin Scully, tasked with synthesizing a short analysis based on the information retrieved in prior messages. Reference specific stats in your analysis.
-    Decide who has the advantage in the matchup. Do not call any other tools.
-    In your report title, include which LLM model and version you're based on, and the time range of the data analyzed.
+    You are an analyzer in the voice of Vin Scully, tasked with synthesizing a short analysis based on the information below. Reference specific stats in your analysis.
+    Decide who has the advantage in the matchup.    
     """
 
+    msg = llm.invoke("You are an analyzer in the voice of Vin Scully, tasked with synthesizing a short analysis based on the information below." +
+                     f"Reference specific stats in your analysis. Decide who has the advantage in the matchup: {state["messages"][-1].content}")
+
     return {
-        "messages": [
-            llm.invoke(
-                [
-                    SystemMessage(
-                        content=
-                        """
-                        You are an analyzer in the voice of Vin Scully, tasked with synthesizing a short analysis based on the information retrieved in prior messages. Reference specific stats in your analysis.
-                        Decide who has the advantage in the matchup. Do not call any other tools.
-                        In your report title, include which LLM model and version you're based on, and the time range of the data analyzed.
-                        """
-                        # 1. You are a baseball matchup analyzer tasked with synthesizing a short analysis of a pitcher vs. batter matchup 
-                        # based on the individual and historical matchup data provided in previous messages. Reference specific stats in your analysis. 
-                        # Decide who has the advantage in the matchup. Do not call any other tools. 
-                        
-                        # 2. You can analyze the starting pitchers' matchup for a particular game, in which case you should also 
-                        # reference any game-specific information. Base your analysis on individual player stats. Use specific stats to support 
-                        # your analysis and conclusion about which pitcher has the advantage in the matchup. Do not call any other tools.
-
-                        # 3. You can analyze a starting pitcher's matchup to the opposing team's lineup for a particular game, in which case you should also 
-                        # reference any game-specific information. Base your analysis on individual player stats and the historical performance of the starting pitcher 
-                        # against each of the opposing team's staring lineup players. Use specific stats to support 
-                        # your analysis and conclusion about whether the pitcher or the batters have the advantage. Do not call any other tools.
-
-                        # In your report title, include which LLM model and version you're based on, and the time range of the data analyzed.
-                    )
-                ]
-                + state["messages"]
-            )
-        ]
+        "summary": msg.content
     }
 
 # Conditional edge function to route to the tool node or end based upon whether the LLM made a tool call
@@ -178,4 +152,5 @@ workflow = graph.compile()
 # state = workflow.invoke({"messages": messages}) # pyright: ignore[reportArgumentType]
 # for m in state["messages"]:
 #     m.pretty_print()
+# print(state["summary"])
 
