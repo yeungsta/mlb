@@ -16,9 +16,9 @@ from langgraph_supervisor import create_supervisor
 from langchain.agents import create_agent
 from langchain.tools import tool
 
-from llm.get_llm import get_heavyweight_llm, get_lightweight_llm
+from llm.get_llm import get_report_writing_llm, get_toolcalling_llm
 from tools.misc_tools import current_date
-from tools.pybaseball_tools import head_to_head_stats, player_lookup, retrieve_batter_stats, retrieve_pitcher_stats
+from tools.pybaseball_tools import head_to_head_stats, retrieve_historical_player_id, retrieve_batter_exit_velo_stats, retrieve_pitcher_pitch_type_stats
 from tools.statsapi_tools import game_info, retrieve_game_id, starting_lineups
 
 import warnings
@@ -27,20 +27,21 @@ import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # Initialize the model
-llm = get_heavyweight_llm()
+llm = get_report_writing_llm()
 # llm = get_lightweight_llm()
 
 # subagents
+# TODO: try breaking this into a batter and a pither stat subagent
 individual_player_subagent = create_agent(
     model=llm,
-    tools=[current_date, player_lookup, retrieve_pitcher_stats, retrieve_batter_stats],
+    tools=[current_date, retrieve_historical_player_id, retrieve_pitcher_pitch_type_stats, retrieve_batter_exit_velo_stats],
     name="individual_player_subagent",
     system_prompt="You are a provider of individual player stats."
 )
 
 head_to_head_subagent = create_agent(
     model=llm,
-    tools=[current_date, player_lookup, head_to_head_stats],
+    tools=[current_date, retrieve_historical_player_id, head_to_head_stats],
     name="head_to_head_subagent",
     system_prompt="You are provider of historical, head-to-head stats between a pitcher and a batter."
 )

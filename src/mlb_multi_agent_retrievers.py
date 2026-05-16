@@ -13,13 +13,13 @@ from langchain.messages import SystemMessage, HumanMessage
 from langchain_core.messages import AnyMessage
 from langgraph.prebuilt import ToolNode
 
-from llm.get_llm import get_heavyweight_llm, get_lightweight_llm
+from llm.get_llm import get_report_writing_llm, get_toolcalling_llm
 from tools.misc_tools import current_date
-from tools.pybaseball_tools import head_to_head_stats, player_lookup, retrieve_batter_stats, retrieve_pitcher_stats
+from tools.pybaseball_tools import head_to_head_stats, retrieve_historical_player_id, retrieve_batter_exit_velo_stats, retrieve_pitcher_pitch_type_stats
 from tools.statsapi_tools import game_info, retrieve_game_id, starting_lineups
 
 # Initialize the model
-llm = get_heavyweight_llm()
+llm = get_report_writing_llm()
 # llm = get_lightweight_llm()
 
 # Schema for structured output to use as routing logic
@@ -62,11 +62,11 @@ router = llm.with_structured_output(RouteDecision)
 #         return "game_agent"
     
 # Augment the LLM with tools
-individual_player_tools = [current_date, player_lookup, retrieve_pitcher_stats, retrieve_batter_stats]
+individual_player_tools = [current_date, retrieve_historical_player_id, retrieve_pitcher_pitch_type_stats, retrieve_batter_exit_velo_stats]
 llm_individual_player = llm.bind_tools(individual_player_tools)
 individual_player_tool_caller = ToolNode(individual_player_tools)
 
-head_to_head_tools = [current_date, player_lookup, head_to_head_stats]
+head_to_head_tools = [current_date, retrieve_historical_player_id, head_to_head_stats]
 llm_head_to_head = llm.bind_tools(head_to_head_tools)
 head_to_head_tool_caller = ToolNode(head_to_head_tools)
 

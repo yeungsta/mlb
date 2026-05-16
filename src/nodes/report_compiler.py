@@ -6,13 +6,15 @@ Optionally generates a PDF via WeasyPrint (wrapped in try/except because
 WeasyPrint requires system libraries that not all environments have).
 """
 
-import datetime
+from datetime import datetime, timezone
 import os
 from pathlib import Path
 import markdown
+import pytz
 
 import jinja2
 import pandas as pd
+import pytz
 
 from models.state import ResearchState, State
 
@@ -57,11 +59,12 @@ def _build_summary_table_html(analysis) -> str:
 
 # def report_compiler(state: ResearchState) -> dict:
 def report_compiler(state: State) -> dict:
+    if not state.get("title"):
+        return {"final_report_html": ""}
+    
     """Assemble the final HTML report from all gathered materials."""
-    # plan = state["research_plan"]
-    # game_stats = state.get("game_stats", [])
-    player_stats = state.get("player_stats", [])
-    # head_to_head_stats = state.get("head_to_head_stats", [])
+    # all_stats = state.get("all_stats", [])
+    stats_summary = state.get("stats_summary", "")
     llm_model = state.get("llm_model")
     sections = state.get("report_sections", {})
     charts = state.get("charts", [])
@@ -84,24 +87,22 @@ def report_compiler(state: State) -> dict:
     #         "content": game_stat_html,
     #     })
 
-    #individual player stats
+    #all stats
     # for title, content in sections.items():
-    for player_stat in player_stats:
-        player_stat_html = markdown.markdown(player_stat.content, extensions=['extra', 'codehilite'])
-        template_sections.append({
-            # "title": "Player Stats",
-            "content": player_stat_html,
-            # "charts": charts_by_section.get(title, []),
-        })
+    # for stat in all_stats:
+        # stat_html = markdown.markdown(stat.content, extensions=['extra', 'codehilite'])
+        # template_sections.append({
+        #     # "title": "Player Stats",
+        #     "content": stat_html,
+        #     # "charts": charts_by_section.get(title, []),
+        # })
 
-    # head-to-head stats
-    # for head_to_head_stat in head_to_head_stats:
-    #     head_to_head_stat_html = markdown.markdown(head_to_head_stat.content, extensions=['extra', 'codehilite'])
-    #     template_sections.append({
-    #         # "title": "Head-to-head Info",
-    #         "content": head_to_head_stat_html,
-    #     })
-
+    # stats summary
+    stats_html = markdown.markdown(stats_summary, extensions=['extra', 'codehilite'])
+    template_sections.append({
+        "content": stats_html,
+    })
+    
     # Collect unique sources from search results
     seen_urls: set[str] = set()
     sources = []
@@ -120,11 +121,16 @@ def report_compiler(state: State) -> dict:
     )
     template = env.get_template("report.html")
 
-    title = "Matchup Analysis Report"
-    generated_datetime = datetime.datetime.now()
+    title = state["title"] if state["title"] else "The Vin Scully AI Matchup Analysis"
 
-    # summary_message = state["messages"][-1].content if state["messages"] else ""
+    # Define the PST/PDT timezone
+    pst = pytz.timezone('America/Los_Angeles')
+    generated_datetime = datetime.now(pst)
+
     summary_message = state["summary"] if state["summary"] else ""
+    # add quotation marks around the summary if not already present
+    if not (summary_message[0] == '"' and summary_message[-1] == '"'):
+        summary_message = f'"{summary_message}"'
     summary_html = markdown.markdown(summary_message, extensions=['extra', 'codehilite'])
 
     html = template.render(
@@ -132,7 +138,7 @@ def report_compiler(state: State) -> dict:
         title=title,
         llm_model=state["llm_model"],
         # topic=state["topic"],
-        generated_date=generated_datetime.strftime("%m/%d/%Y, %H:%M:%S"),
+        generated_date=generated_datetime.strftime("%m/%d/%Y %I:%M %p PST"),
         # executive_summary=sections.get("Executive Summary", ""),
         executive_summary=summary_html,
         summary_table=summary_table_html,
@@ -143,14 +149,56 @@ def report_compiler(state: State) -> dict:
     )
 
     # Save HTML output
+    # Ensure the report directory exists
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+    # 1. Format today's date (e.g., "2026-04-30")
+    today_folder_name = datetime.now().strftime("%m-%d-%Y")
+    # 2. Define the full path to the new subfolder
+    daily_report_dir = OUTPUT_DIR / today_folder_name
+    # 3. Create the folder
+    # parents=True: creates if it doesn't exist
+    # exist_ok=True: prevents an error if the folder is already there
+    daily_report_dir.mkdir(parents=True, exist_ok=True)
+
     # safe_name = "".join(c if c.isalnum() or c in "-_ " else "" for c in plan.title)
     safe_name = "".join(c if c.isalnum() or c in "-_ " else "" for c in title)
     safe_name = safe_name.strip().replace(" ", "-")[:80]
-    name_with_timestamp = safe_name + generated_datetime.strftime("_%m_%d_%Y_%H_%M_%S")
-    html_path = OUTPUT_DIR / f"{name_with_timestamp}.html"
+    # name_with_timestamp = safe_name + generated_datetime.strftime("_%m_%d_%Y_%H_%M_%S")
+    html_path = daily_report_dir / f"{safe_name}.html"
     html_path.write_text(html, encoding="utf-8")
     print(f"  ✓ Report saved: {html_path}")
+
+    #email
+    import smtplib
+    from email.message import EmailMessage
+
+    # Configuration
+    SENDER_EMAIL = "yeungsta@gmail.com"
+    APP_PASSWORD = "pofz xtky kugq lqzn"  # Use the 16-digit App Password
+    RECIPIENT_EMAIL = "yeungsta@gmail.com"
+
+    # Create the email container
+    msg = EmailMessage()
+    msg['Subject'] = f"⚾️ {title}"
+    msg['From'] = SENDER_EMAIL
+    msg['To'] = RECIPIENT_EMAIL
+
+    # Define the HTML content
+    html_content = html
+
+    # Set the email body to HTML
+    msg.add_alternative(html_content, subtype='html')
+
+    # Send the email via Gmail's SMTP server
+    try:
+        # Use SMTP_SSL for port 465 (more secure)
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
+            smtp.login(SENDER_EMAIL, APP_PASSWORD)
+            smtp.send_message(msg)
+        print("Email sent successfully!")
+    except Exception as e:
+        print(f"Failed to send email: {e}")
 
     return {
         # "final_report_html": html,
