@@ -11,6 +11,8 @@ from langgraph.graph import END, START, MessagesState, StateGraph, add_messages
 from langchain.messages import SystemMessage, HumanMessage, ToolMessage
 from langchain_core.messages import AnyMessage
 from langgraph.prebuilt import ToolNode
+from langgraph.types import StreamWriter
+from langgraph.config import get_stream_writer
 
 from llm.get_llm import get_report_writing_llm, get_toolcalling_llm
 from tools.misc_tools import current_date
@@ -44,6 +46,9 @@ llm_with_tools = tool_calling_llm.bind_tools(tools)
 tool_caller = ToolNode(tools)
 
 def stat_retrieval(state: State):
+    writer = get_stream_writer()
+    writer({"type": "log", "message": "Retrieving stats...", "progress": 0.1})
+
     """
     Stat retrieval node that calls only supplied tools based on user input in the messages:
     1. For matchup requests that are date specific, first retrieve the current date, then the game ID for the specified date and team.
@@ -93,6 +98,9 @@ def stat_retrieval(state: State):
     }
 
 def matchup_synthesizer(state: State):
+    writer = get_stream_writer()
+    writer({"type": "log", "message": "Vin synthesizing a matchup analysis...", "progress": 0.5})
+
     """
     You are an analyzer in the voice of Vin Scully, tasked with synthesizing an analysis based on {state["stats_summary"]} and game info from {game_stats}.
     Reference specific stats in your analysis. Decide who has the advantage in the matchup. Do not include a the prologue or setting.
@@ -143,6 +151,9 @@ def matchup_synthesizer(state: State):
     }
 
 def title_maker(state: State):
+    writer = get_stream_writer()
+    writer({"type": "log", "message": "Coming up with a title...", "progress": 0.9})
+
     """
     You are title maker that comes up with one, catchy and dramatic title for this report: {state["summary"]}. Just give me the title, do not include any additional text.
     """
@@ -205,7 +216,6 @@ def build_graph():
     graph.add_edge("report_compiler", END)
 
     return graph.compile()
-
 
 # Invoke from user input
 # messages = [HumanMessage(content="Analyze Alex Vesia's stats")]
