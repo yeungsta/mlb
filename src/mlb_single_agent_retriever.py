@@ -14,16 +14,19 @@ from langgraph.prebuilt import ToolNode
 from langgraph.types import StreamWriter
 from langgraph.config import get_stream_writer
 
-from llm.get_llm import get_report_writing_llm, get_toolcalling_llm
+from llm.get_llm import get_report_writing_llm, get_report_writing_llm_gemini, get_toolcalling_llm, get_toolcalling_llm_gemini
 from tools.misc_tools import current_date
 from tools.pybaseball_tools import head_to_head_stats, retrieve_historical_player_id, retrieve_batter_exit_velo_stats_past_year, retrieve_pitcher_pitch_type_stats_past_year
 from tools.statsapi_tools import retrieve_current_player_id, game_info, retrieve_game_id, retrieve_season_hitting_stats, retrieve_season_pitching_stats, starting_lineups
 from models.state import MatchupSynthesis, State
 from nodes.report_compiler import report_compiler
 
-
-tool_calling_llm = get_toolcalling_llm()
-report_writing_llm = get_report_writing_llm()
+# Ollama
+# tool_calling_llm = get_toolcalling_llm()
+# report_writing_llm = get_report_writing_llm()
+# Gemini
+tool_calling_llm = get_toolcalling_llm_gemini()
+report_writing_llm = get_report_writing_llm_gemini()
 
 simple_llm_model = tool_calling_llm.model.split(":")[0]
 combined_llm_models = tool_calling_llm.model.split(":")[0]+":"+str(tool_calling_llm.temperature) + "+" + report_writing_llm.model.split(":")[0]+":"+str(report_writing_llm.temperature)# for both tool calling and report writing (not as good at tool calling as the dedicated tool-calling LLM, but better at report writing than the lightweight LLM, so using it as a middle ground for the stat retrieval node which requires both capabilities)
@@ -88,7 +91,11 @@ def stat_retrieval(state: State):
     # TODO: right now this is just the final stats summary of the stat_retrieval node, not ALL retrieved stats.
     stats_summary = ""
     if not msg.tool_calls:
-        stats_summary = msg.content
+        #check if msg.content is an array (Gemini puts content in an array) and extract text accordingly
+        if isinstance(msg.content, list):
+            stats_summary = msg.text
+        else:
+            stats_summary = msg.content
 
     return {
         "messages": [msg],
@@ -127,7 +134,11 @@ def matchup_synthesizer(state: State):
     game_stats = ""
     for msg in state["messages"]:
         if msg.name == "game_info":
-            game_stats = msg.content
+            #check if msg.content is an array (Gemini puts content in an array) and extract text accordingly
+            if isinstance(msg.content, list):
+                game_stats = msg.text
+            else:
+                game_stats = msg.content
 
     synthesis = report_writing_llm.invoke(
         f"""
@@ -144,10 +155,16 @@ def matchup_synthesizer(state: State):
         """
     )
     
+    #check if msg.content is an array (Gemini puts content in an array) and extract text accordingly
+    if isinstance(msg.content, list):
+        summary = synthesis.text
+    else:
+        summary = synthesis.content
+
     return {
         # "title": synthesis.title,
         # "summary": synthesis.summary
-        "summary": synthesis.content
+        "summary": summary
     }
 
 def title_maker(state: State):
@@ -169,8 +186,15 @@ def title_maker(state: State):
         """
     )
     
+    #check if msg.content is an array (Gemini puts content in an array) and extract text accordingly
+    if isinstance(title.content, list):
+        title = title.text
+    else:        
+        title = title.content
+
     return {
-        "title": title.content,
+        # "title": title.content,
+        "title": title
     }
 
 # Conditional edge function to route to the tool node or end based upon whether the LLM made a tool call

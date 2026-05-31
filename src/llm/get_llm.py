@@ -38,3 +38,31 @@ def get_toolcalling_llm():
 
 #local models for testing
 # llm = ChatOllama(model="PetrosStav/gemma3-tools:4b", temperature=0) # confused with player names
+
+from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAI
+
+def get_report_writing_llm_gemini():
+    return ChatGoogleGenerativeAI(
+        # model="gemini-3.5-flash",
+        model="gemini-3.1-flash-lite",
+        # model="gemini-2.5-flash",   #hit rate limit
+        # model="gemini-2.5-flash-lite", #didn't use tool calls effectively
+        temperature=0.9,  # Gemini 3.0+ defaults to 1.0
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+        # other params...
+    )
+
+def get_toolcalling_llm_gemini():
+    return ChatGoogleGenerativeAI(
+        # model="gemini-3.5-flash",
+        model="gemini-3.1-flash-lite",
+        # model="gemini-2.5-flash", # hit rate limit
+        # model="gemini-2.5-flash-lite", # didn't use tool calls effectively
+        temperature=0.0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+        # other params...
+    )
