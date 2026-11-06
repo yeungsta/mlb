@@ -1,9 +1,24 @@
+import os
+from urllib import response
+
 import pytest
 from langchain.agents import create_agent
 from langchain.messages import AIMessage, SystemMessage, HumanMessage, ToolMessage
 
 from src.mlb_single_agent_retriever import build_graph
 from models import state
+
+SPEECH_PLAYBACK_ENABLED = True  # Set to False to disable speech playback during tests
+# Set to the desired voice for speech playback
+# american accent:
+# SPEECH_VOICE = "Zoey"  
+# SPEECH_VOICE = "Easton"
+# british accent:
+# SPEECH_VOICE = "Freya"
+# SPEECH_VOICE = "Spencer"
+# interesting characters
+# SPEECH_VOICE = "Old Mortlake"
+SPEECH_VOICE = "The Thing Under the Stairs"
 
 def assert_tool_calls(messages, expected_tool_calls):
     tool_calls = [
@@ -25,7 +40,10 @@ def assert_final_message(messages):
 def test_starting_pitcher_vs_opposing_lineup():
     graph = build_graph()
 
-    messages = [HumanMessage(content="Analyze today's Dodger's starting pitcher vs. the opposing lineup.")]
+    # messages = [HumanMessage(content="Analyze today's Dodger's starting pitcher vs. the opposing lineup.")]
+    # messages = [HumanMessage(content="Analyze today's Brewers' starting pitcher vs. the opposing lineup.")]
+    messages = [HumanMessage(content="Analyze today's Rays' starting pitcher vs. the opposing lineup.")]
+    # messages = [HumanMessage(content="Analyze today's White Sox's starting pitcher vs. the opposing lineup.")]
     # messages = [HumanMessage(content="Analyze today's Phillies game's starting pitcher vs. the opposing lineup.")]
     # messages = [HumanMessage(content="Analyze today's Mariners game's starting pitcher vs. the opposing lineup.")]
     # messages = [HumanMessage(content="Analyze today's Tigers game's starting pitcher vs. the opposing lineup.")]
@@ -35,11 +53,8 @@ def test_starting_pitcher_vs_opposing_lineup():
     for m in result["messages"]:
         m.pretty_print()
         
-    #print final summary analysis for debugging
-    title = result["title"]
-    summary = result["summary"]
-    print(f"\n{title}")
-    print(f"\n{summary}")
+    if SPEECH_PLAYBACK_ENABLED:
+        speak_results(result)
 
     assert_final_message(result["messages"])
 
@@ -58,13 +73,17 @@ def test_individual_pitcher_analysis():
     # messages = [HumanMessage(content="Analyze Roki Sasaki's stats")]
     # messages = [HumanMessage(content="Analyze Yoshinobu Yamamoto's stats")]
     # messages = [HumanMessage(content="Analyze Emmet Sheehan's stats")]
-    messages = [HumanMessage(content="Analyze Eric Lauer's stats")]
+    # messages = [HumanMessage(content="Analyze Edwin Diaz's stats")]
+    # messages = [HumanMessage(content="Analyze Blake Snell's stats this season")]
+    messages = [HumanMessage(content="Analyze Trevor Megill's stats this season")]
 
     result = graph.invoke({"messages": messages}) # pyright: ignore[reportArgumentType]
 
     for m in result["messages"]:
         m.pretty_print()
         
+    if SPEECH_PLAYBACK_ENABLED:
+        speak_results(result)
 
     assert_final_message(result["messages"])
 
@@ -79,13 +98,17 @@ def test_individual_batter_analysis():
     # messages = [HumanMessage(content="Analyze Kazuma Okamoto's stats")]
     # messages = [HumanMessage(content="Analyze Andy Page's stats")]
     # messages = [HumanMessage(content="Analyze Mookie Betts's stats")]
-    messages = [HumanMessage(content="Analyze Teoscar Hernandez's stats")]
+    # messages = [HumanMessage(content="Analyze Teoscar Hernandez's stats")]
+    messages = [HumanMessage(content="Analyze Tommy Edman's stats")]
 
     result = graph.invoke({"messages": messages}) # pyright: ignore[reportArgumentType]
 
     for m in result["messages"]:
         m.pretty_print()
-        
+
+    if SPEECH_PLAYBACK_ENABLED:
+        speak_results(result)
+
     assert_final_message(result["messages"])
 
     expected_tool_calls = ["current_date", 
@@ -105,6 +128,9 @@ def test_head_to_head_analysis():
 
     for m in result["messages"]:
         m.pretty_print()
+
+    if SPEECH_PLAYBACK_ENABLED:
+        speak_results(result)
         
     assert_final_message(result["messages"])
 
@@ -117,18 +143,48 @@ def test_head_to_head_analysis():
 def test_game_info():
     graph = build_graph()
 
-    messages = [HumanMessage(content="When's the next game for the Dodgers, who are the starting pitchers, and what are the lineups of both teams?")]
+    # messages = [HumanMessage(content="When's the next game for the Dodgers, who are the starting pitchers, and what are the lineups of both teams?")]
     # messages = [HumanMessage(content="Info on today's Dodgers game")]
     # messages = [HumanMessage(content="Analyze today's Dodgers game's starting pitchers.")]
+    # messages = [HumanMessage(content="When's the next game for the Brewers, who are the starting pitchers, and what are the lineups of both teams?")]
+    messages = [HumanMessage(content="When was the previous game for the Brewers, who were the starting pitchers, and what were the lineups of both teams?")]
 
     result = graph.invoke({"messages": messages}) # pyright: ignore[reportArgumentType]
 
     for m in result["messages"]:
         m.pretty_print()
-        
+
+    if SPEECH_PLAYBACK_ENABLED:
+        speak_results(result)
+
     assert_final_message(result["messages"])
 
     expected_tool_calls = ["current_date", "retrieve_game_id", "game_info", "starting_lineups"]
     assert_tool_calls(result["messages"], expected_tool_calls=expected_tool_calls)
 
+def speak_results(result:dict):
+    title = result["title"]
+    summary = result["summary"]
+    speak_text(f"{title}, by Vin Scully AI. {summary}", voice=SPEECH_VOICE)
 
+def speak_text(summary_text:str, voice:str="default"):
+    # use speech LLM to speak the title
+    from openai import OpenAI
+
+    client = OpenAI(base_url=os.getenv("OLLAMA_API_V1_BASE"), api_key=os.getenv("OLLAMA_API_KEY"))
+
+    print(f"\nSpeaking summary with voice '{voice}': {summary_text}\n")
+
+    with client.audio.speech.with_streaming_response.create(
+        model="phonon",
+        voice=voice,
+        input=summary_text,
+        response_format="wav",
+    ) as response:
+        response.stream_to_file("report_speech.wav")
+
+    #immediately playback the .wav file
+    import simpleaudio as sa
+    wave_obj = sa.WaveObject.from_wave_file("report_speech.wav")
+    play_obj = wave_obj.play()
+    play_obj.wait_done()

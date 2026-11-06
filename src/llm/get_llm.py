@@ -1,33 +1,51 @@
 from langchain_ollama import ChatOllama
+from langchain_openrouter import ChatOpenRouter
+
+USE_OLLAMA = True  # Set to False to use OpenRouter instead
+
+# free models
+# OLLAMA_MODEL = "gemma4:31b-cloud"
+# OLLAMA_MODEL = "beam:cloud"
+# OLLAMA_MODEL = "nemotron-3-nano:30b-cloud"
+OLLAMA_MODEL = "gpt-oss:120b-cloud"
+# locally served by Ollama
+# OLLAMA_MODEL = "gemma4:12b-it-qat"
+
+# OPENROUTER_MODEL = "recursive/flint-v1.0:free"
+# OPENROUTER_MODEL = "google/gemma-4-31b-it:free"
+OPENROUTER_MODEL = "nvidia/nemotron-3.5-super-vl:free"
+
+# speech models
+OLLAMA_SPEECH_MODEL = "phonon:latest"
+
+TEMPERATURE_REPORT_WRITING = 0.8
+TEMPERATURE_TOOL_CALLING = 0.0
 
 def get_report_writing_llm():
-    # Z AI's GLM-5: A strong reasoning and agentic model from Z.ai with 744B total parameters (40B active), built for complex systems engineering and long-horizon tasks
-    # Made awesome analysis! Fast too. Got tool usage order correct consistently in testing.
-    # needs subscription
-    # return ChatOllama(model="glm-5:cloud", temperature=0)
-    # Moonshot AI's native multimodal agentic model that seamlessly integrates vision and language understanding with advanced agentic capabilities, 
-    # instant and thinking modes, as well as conversational and agentic paradigms
-    # Made awesome analysis! Cheaper token usage. Did not get tool usage order correct consistently in testing (sometimes called head-to-head stats tool before looking up player ids, which caused an error since the tool didn't have the necessary information to make the call)
-    # needs subscription
-    # return ChatOllama(model="kimi-k2.6:cloud", temperature=0)
-
-    # didn't use Vin Scully style language
-    # return ChatOllama(model="qwen3-coder:480b-cloud", temperature=0.8)
-    # didn't use Vin Scully style language
-    # return ChatOllama(model="qwen3-coder-next:cloud", temperature=0.8)
-    # didn't use Vin Scully style language
-    # return ChatOllama(model="nemotron-3-super:cloud", temperature=0.8)
-    # good summary, but cannot do structured output, which makes it difficult to extract the summary + title for use in the final report
-    return ChatOllama(model="gemma4:31b-cloud", temperature=0.8)
+    # Ollama
+    if USE_OLLAMA:
+        return ChatOllama(model=OLLAMA_MODEL, temperature=TEMPERATURE_REPORT_WRITING)
+    else:
+        # OpenRouter
+        return ChatOpenRouter(
+            model=OPENROUTER_MODEL,
+            temperature=TEMPERATURE_REPORT_WRITING,
+        # max_tokens=1024,
+        # max_retries=2
+        )
 
 def get_toolcalling_llm():
-    return ChatOllama(model="gemma4:31b-cloud", temperature=0)
-
-    # temp 0.0: basic summary
-    # return ChatOllama(model="qwen3-coder-next:cloud", temperature=0)
-
-    # return ChatOllama(model="minimax-m2.7:cloud", temperature=0)    # needs subscription
-    # return ChatOllama(model="qwen3.5:397b-cloud", temperature=0)    # needs subscription
+    # Ollama
+    if USE_OLLAMA:
+        return ChatOllama(model=OLLAMA_MODEL, temperature=TEMPERATURE_TOOL_CALLING)
+    else:
+        # OpenRouter
+        return ChatOpenRouter(
+            model=OPENROUTER_MODEL,
+            temperature=TEMPERATURE_TOOL_CALLING,
+        # max_tokens=1024,
+        # max_retries=2
+        )
 
 # Other models I tested but didn't perform as well for this use case:
 # works well but sometimes wrong analysis

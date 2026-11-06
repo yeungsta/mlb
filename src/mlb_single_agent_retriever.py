@@ -21,12 +21,13 @@ from tools.statsapi_tools import retrieve_current_player_id, game_info, retrieve
 from models.state import MatchupSynthesis, State
 from nodes.report_compiler import report_compiler
 
-# Ollama
-# tool_calling_llm = get_toolcalling_llm()
-# report_writing_llm = get_report_writing_llm()
+# LLMs
+tool_calling_llm = get_toolcalling_llm()
+report_writing_llm = get_report_writing_llm()
+
 # Gemini
-tool_calling_llm = get_toolcalling_llm_gemini()
-report_writing_llm = get_report_writing_llm_gemini()
+# tool_calling_llm = get_toolcalling_llm_gemini()
+# report_writing_llm = get_report_writing_llm_gemini()
 
 simple_llm_model = tool_calling_llm.model.split(":")[0]
 combined_llm_models = tool_calling_llm.model.split(":")[0]+":"+str(tool_calling_llm.temperature) + "+" + report_writing_llm.model.split(":")[0]+":"+str(report_writing_llm.temperature)# for both tool calling and report writing (not as good at tool calling as the dedicated tool-calling LLM, but better at report writing than the lightweight LLM, so using it as a middle ground for the stat retrieval node which requires both capabilities)

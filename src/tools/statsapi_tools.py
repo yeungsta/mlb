@@ -91,6 +91,7 @@ def retrieve_current_player_id(player_name: str) -> dict:
 # print(retrieve_current_player_id("J.C. Escarra"))
 # print(retrieve_current_player_id("Ken Griffey Jr."))
 # print(retrieve_current_player_id("Clayton Kershaw"))
+# print(retrieve_current_player_id("Miguel Vargas"))
 
 @tool
 def retrieve_game_id(date: str, team_name: str) -> str:
