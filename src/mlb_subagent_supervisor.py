@@ -18,7 +18,13 @@ from langchain.tools import tool
 
 from llm.get_llm import get_report_writing_llm, get_toolcalling_llm
 from tools.misc_tools import current_date
-from tools.pybaseball_tools import head_to_head_stats, retrieve_historical_player_id, retrieve_batter_exit_velo_stats, retrieve_pitcher_pitch_type_stats
+from tools.pybaseball_tools import (
+    head_to_head_stats,
+    retrieve_advanced_hitting_stats,
+    retrieve_batter_exit_velo_stats,
+    retrieve_historical_player_id,
+    retrieve_pitcher_pitch_type_stats,
+)
 from tools.statsapi_tools import game_info, retrieve_game_id, starting_lineups
 
 import warnings
@@ -34,9 +40,19 @@ llm = get_report_writing_llm()
 # TODO: try breaking this into a batter and a pither stat subagent
 individual_player_subagent = create_agent(
     model=llm,
-    tools=[current_date, retrieve_historical_player_id, retrieve_pitcher_pitch_type_stats, retrieve_batter_exit_velo_stats],
+    tools=[
+        current_date,
+        retrieve_historical_player_id,
+        retrieve_pitcher_pitch_type_stats,
+        retrieve_batter_exit_velo_stats,
+        retrieve_advanced_hitting_stats,
+    ],
     name="individual_player_subagent",
-    system_prompt="You are a provider of individual player stats."
+    system_prompt=(
+        "You are a provider of individual player stats. For batting analysis, retrieve season "
+        "wOBA and xwOBA for the requested season or use the current year if unspecified. "
+        "Report the season and plate appearances alongside available values."
+    )
 )
 
 head_to_head_subagent = create_agent(
@@ -110,6 +126,7 @@ supervisor_agent = create_agent(
         3. a starting pitcher's matchup to the opposing team's lineup for a particular game, in which case you should reference individual stats, historical head-to-head stats, and game-specific information.
         
         Provide a short report of the matchup analysis based on the retrieved stats. Reference specific stats in your analysis.
+        When relevant, cite available season wOBA and xwOBA with the season and plate appearances. Treat small samples with caution.
         Decide which party has the advantage in the matchup.
         In your report title, include which LLM model and version you're based on, and the time range of the data analyzed.
         """

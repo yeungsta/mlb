@@ -16,7 +16,13 @@ from langgraph.config import get_stream_writer
 
 from llm.get_llm import get_report_writing_llm, get_report_writing_llm_gemini, get_toolcalling_llm, get_toolcalling_llm_gemini
 from tools.misc_tools import current_date
-from tools.pybaseball_tools import head_to_head_stats, retrieve_historical_player_id, retrieve_batter_exit_velo_stats_past_year, retrieve_pitcher_pitch_type_stats_past_year
+from tools.pybaseball_tools import (
+    head_to_head_stats,
+    retrieve_advanced_hitting_stats,
+    retrieve_batter_exit_velo_stats_past_year,
+    retrieve_historical_player_id,
+    retrieve_pitcher_pitch_type_stats_past_year,
+)
 from tools.statsapi_tools import retrieve_current_player_id, game_info, retrieve_game_id, retrieve_season_hitting_stats, retrieve_season_pitching_stats, starting_lineups
 from models.state import MatchupSynthesis, State
 from nodes.report_compiler import report_compiler
@@ -36,7 +42,8 @@ combined_llm_models = tool_calling_llm.model.split(":")[0]+":"+str(tool_calling_
 # initialize tool-calling LLM and bind tools
 tools = [current_date, retrieve_current_player_id, retrieve_historical_player_id, 
          retrieve_pitcher_pitch_type_stats_past_year, retrieve_season_pitching_stats, 
-         retrieve_batter_exit_velo_stats_past_year, retrieve_season_hitting_stats, 
+         retrieve_batter_exit_velo_stats_past_year, retrieve_season_hitting_stats,
+         retrieve_advanced_hitting_stats,
          head_to_head_stats, retrieve_game_id, game_info, starting_lineups]
 llm_with_tools = tool_calling_llm.bind_tools(tools)
 
@@ -75,6 +82,7 @@ def stat_retrieval(state: State):
                     4. Historical head-to-head data between a pitcher and batter based on their MLBAM IDs, starting with the earliest possible date of their matchup history.
                     5. For a starting pitcher's matchup to the opposing team's lineup, retrieve the historical performance of the starting pitcher against each of the opposing team's lineup players, 
                     as well as individual stats for the starting pitcher and the opposing team's lineup players.
+                    6. For batting analysis, retrieve season wOBA and xwOBA for the requested season, or use the current year if unspecified. Include the season and plate appearances in the stats summary.
                     Make the final message a summary of all retrieved stats. Do not ask questions.
                     """
                 )
@@ -151,6 +159,8 @@ def matchup_synthesizer(state: State):
         Game Info:
         {game_stats}
 
+        When relevant, cite the batter's season wOBA and xwOBA with the season and plate appearances.
+        Distinguish actual wOBA from expected wOBA. Treat small samples with caution and omit unavailable values.
         Reference specific stats in your summary. Decide who has the advantage in the matchup. 
         Do not include a prologue or setting.
         """
