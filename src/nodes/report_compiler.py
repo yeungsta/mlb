@@ -7,7 +7,9 @@ WeasyPrint requires system libraries that not all environments have).
 """
 
 from datetime import datetime, timezone
+from email.message import EmailMessage
 import os
+import smtplib
 from pathlib import Path
 import markdown
 import pytz
@@ -129,7 +131,7 @@ def report_compiler(state: State) -> dict:
 
     summary_message = state["summary"] if state["summary"] else ""
     # add quotation marks around the summary if not already present
-    if not (summary_message[0] == '"' and summary_message[-1] == '"'):
+    if not (summary_message.startswith('"') and summary_message.endswith('"')):
         summary_message = f'"{summary_message}"'
     summary_html = markdown.markdown(summary_message, extensions=['extra', 'codehilite'])
 
@@ -169,37 +171,30 @@ def report_compiler(state: State) -> dict:
     html_path.write_text(html, encoding="utf-8")
     print(f"  ✓ Report saved: {html_path}")
 
-    #email
-    import smtplib
-    from email.message import EmailMessage
+    if os.getenv("VIN_AI_EMAIL_ENABLED") == "1":
+        send_report_email(title, html)
 
-    # Configuration
-    SENDER_EMAIL = "yeungsta@gmail.com"
-    APP_PASSWORD = "pofz xtky kugq lqzn"  # Use the 16-digit App Password
-    RECIPIENT_EMAIL = "yeungsta@gmail.com"
+    return {}
 
-    # Create the email container
-    msg = EmailMessage()
-    msg['Subject'] = f"⚾️ {title}"
-    msg['From'] = SENDER_EMAIL
-    msg['To'] = RECIPIENT_EMAIL
 
-    # Define the HTML content
-    html_content = html
+def send_report_email(title: str, html: str) -> None:
+    sender = os.getenv("VIN_AI_SMTP_SENDER")
+    password = os.getenv("VIN_AI_SMTP_APP_PASSWORD")
+    recipient = os.getenv("VIN_AI_SMTP_RECIPIENT")
+    if not all((sender, password, recipient)):
+        print("Email skipped: configure the SMTP sender, app password, and recipient.")
+        return
 
-    # Set the email body to HTML
-    msg.add_alternative(html_content, subtype='html')
+    message = EmailMessage()
+    message["Subject"] = f"⚾️ {title}"
+    message["From"] = sender
+    message["To"] = recipient
+    message.add_alternative(html, subtype="html")
 
-    # Send the email via Gmail's SMTP server
     try:
-        # Use SMTP_SSL for port 465 (more secure)
-        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as smtp:
-            smtp.login(SENDER_EMAIL, APP_PASSWORD)
-            smtp.send_message(msg)
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
+            smtp.login(sender, password)
+            smtp.send_message(message)
         print("Email sent successfully!")
-    except Exception as e:
-        print(f"Failed to send email: {e}")
-
-    return {
-        # "final_report_html": html,
-    }
+    except (OSError, smtplib.SMTPException) as error:
+        print(f"Failed to send email: {type(error).__name__}")

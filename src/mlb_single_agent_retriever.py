@@ -141,13 +141,16 @@ def matchup_synthesizer(state: State):
     
     #save off game info for part of summary analysis
     game_stats = ""
-    for msg in state["messages"]:
+    for msg in reversed(state["messages"]):
+        if isinstance(msg, HumanMessage):
+            break
         if msg.name == "game_info":
             #check if msg.content is an array (Gemini puts content in an array) and extract text accordingly
             if isinstance(msg.content, list):
                 game_stats = msg.text
             else:
                 game_stats = msg.content
+            break
 
     synthesis = report_writing_llm.invoke(
         f"""
@@ -167,7 +170,7 @@ def matchup_synthesizer(state: State):
     )
     
     #check if msg.content is an array (Gemini puts content in an array) and extract text accordingly
-    if isinstance(msg.content, list):
+    if isinstance(synthesis.content, list):
         summary = synthesis.text
     else:
         summary = synthesis.content
