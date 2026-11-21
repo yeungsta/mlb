@@ -166,3 +166,10 @@ cython_debug/
 reports/
 
 .DS_Store
+
+#VSCode
+*.code-workspace
+
+#text-to-speech outputs
+*.wav
+

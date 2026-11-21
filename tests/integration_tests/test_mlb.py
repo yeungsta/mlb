@@ -61,7 +61,7 @@ def test_starting_pitcher_vs_opposing_lineup():
     expected_tool_calls = ["current_date", 
                         #    "retrieve_current_player_id", # sometimes the historical player id retrieval tool is called before the current player id retrieval tool
          "retrieve_pitcher_pitch_type_stats_past_year", "retrieve_season_pitching_stats", 
-         "retrieve_batter_exit_velo_stats_past_year", "retrieve_season_hitting_stats", 
+         "retrieve_batter_exit_velo_stats_past_year", "retrieve_season_hitting_stats", "retrieve_advanced_hitting_stats",
          "head_to_head_stats", "retrieve_game_id", "game_info", "starting_lineups"]
     assert_tool_calls(result["messages"], expected_tool_calls=expected_tool_calls)
 
@@ -96,10 +96,10 @@ def test_individual_batter_analysis():
     graph = build_graph()
 
     # messages = [HumanMessage(content="Analyze Kazuma Okamoto's stats")]
-    # messages = [HumanMessage(content="Analyze Andy Page's stats")]
+    messages = [HumanMessage(content="Analyze Andy Page's stats")]
     # messages = [HumanMessage(content="Analyze Mookie Betts's stats")]
     # messages = [HumanMessage(content="Analyze Teoscar Hernandez's stats")]
-    messages = [HumanMessage(content="Analyze Tommy Edman's stats")]
+    # messages = [HumanMessage(content="Analyze Tommy Edman's stats")]
 
     result = graph.invoke({"messages": messages}) # pyright: ignore[reportArgumentType]
 
@@ -113,16 +113,17 @@ def test_individual_batter_analysis():
 
     expected_tool_calls = ["current_date", 
                         #    "retrieve_current_player_id", # sometimes the historical player id retrieval tool is called before the current player id retrieval tool
-                           "retrieve_batter_exit_velo_stats_past_year", "retrieve_season_hitting_stats"]
+                           "retrieve_batter_exit_velo_stats_past_year", "retrieve_season_hitting_stats", "retrieve_advanced_hitting_stats"]
     assert_tool_calls(result["messages"], expected_tool_calls=expected_tool_calls)
 
 def test_head_to_head_analysis():
     graph = build_graph()
 
     # messages = [HumanMessage(content="Head to head stats for Dylan Cease vs. Mookie Betts.")]
-    messages = [HumanMessage(content="Mike Trout vs. Clayton Kershaw")]
+    # messages = [HumanMessage(content="Mike Trout vs. Clayton Kershaw")]
     # messages = [HumanMessage(content="Dylan Cease vs. Mookie Betts")]
     # messages = [HumanMessage(content="Clayton Kershaw vs. Mike Trout")]
+    messages = [HumanMessage(content="Yoshinobu Yamamoto vs. Manny Machado")]
 
     result = graph.invoke({"messages": messages}) # pyright: ignore[reportArgumentType]
 
@@ -136,7 +137,7 @@ def test_head_to_head_analysis():
 
     expected_tool_calls = ["current_date", "retrieve_current_player_id", 
                            "retrieve_pitcher_pitch_type_stats_past_year", "retrieve_season_pitching_stats", 
-                            "retrieve_batter_exit_velo_stats_past_year", "retrieve_season_hitting_stats", 
+                            "retrieve_batter_exit_velo_stats_past_year", "retrieve_season_hitting_stats", "retrieve_advanced_hitting_stats",
                             "head_to_head_stats"]
     assert_tool_calls(result["messages"], expected_tool_calls=expected_tool_calls)
 
