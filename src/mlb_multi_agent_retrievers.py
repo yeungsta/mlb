@@ -15,7 +15,13 @@ from langgraph.prebuilt import ToolNode
 
 from llm.get_llm import get_report_writing_llm, get_toolcalling_llm
 from tools.misc_tools import current_date
-from tools.pybaseball_tools import head_to_head_stats, retrieve_historical_player_id, retrieve_batter_exit_velo_stats, retrieve_pitcher_pitch_type_stats
+from tools.pybaseball_tools import (
+    head_to_head_stats,
+    retrieve_advanced_hitting_stats,
+    retrieve_batter_exit_velo_stats,
+    retrieve_historical_player_id,
+    retrieve_pitcher_pitch_type_stats,
+)
 from tools.statsapi_tools import game_info, retrieve_game_id, starting_lineups
 
 # Initialize the model
@@ -62,7 +68,13 @@ router = llm.with_structured_output(RouteDecision)
 #         return "game_agent"
     
 # Augment the LLM with tools
-individual_player_tools = [current_date, retrieve_historical_player_id, retrieve_pitcher_pitch_type_stats, retrieve_batter_exit_velo_stats]
+individual_player_tools = [
+    current_date,
+    retrieve_historical_player_id,
+    retrieve_pitcher_pitch_type_stats,
+    retrieve_batter_exit_velo_stats,
+    retrieve_advanced_hitting_stats,
+]
 llm_individual_player = llm.bind_tools(individual_player_tools)
 individual_player_tool_caller = ToolNode(individual_player_tools)
 
@@ -89,6 +101,7 @@ def individual_player_agent(state: State):
                 """
                 Agent that provides individual stats for a player. 
                 Always retrieve individual player stats for the requested time range (default to the past year if no time range is provided).
+                For batting analysis, also retrieve wOBA and xwOBA for the requested season or the current year if unspecified.
                 Return only the results from the tool calls with no extraneous text or questions.
                 """
             )

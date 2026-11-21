@@ -1,19 +1,23 @@
 from langchain_ollama import ChatOllama
 from langchain_openrouter import ChatOpenRouter
 
-USE_OLLAMA = True  # Set to False to use OpenRouter instead
+USE_OLLAMA = False  # Set to False to use OpenRouter instead
 
 # free models
 # OLLAMA_MODEL = "gemma4:31b-cloud"
-# OLLAMA_MODEL = "beam:cloud"
+OLLAMA_MODEL = "beam:cloud"
 # OLLAMA_MODEL = "nemotron-3-nano:30b-cloud"
-OLLAMA_MODEL = "gpt-oss:120b-cloud"
+# OLLAMA_MODEL = "gpt-oss:120b-cloud"
 # locally served by Ollama
 # OLLAMA_MODEL = "gemma4:12b-it-qat"
 
+# free models
 # OPENROUTER_MODEL = "recursive/flint-v1.0:free"
 # OPENROUTER_MODEL = "google/gemma-4-31b-it:free"
-OPENROUTER_MODEL = "nvidia/nemotron-3.5-super-vl:free"
+# OPENROUTER_MODEL = "google/gemma-4-26b-a4b-it:free"
+# OPENROUTER_MODEL = "nvidia/nemotron-3.5-super-vl:free"
+OPENROUTER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free"
+# OPENROUTER_MODEL = "baidu/ernie-5.5-flash-preview:free"
 
 # speech models
 OLLAMA_SPEECH_MODEL = "phonon:latest"

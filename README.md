@@ -121,4 +121,16 @@ These tests call the model and live baseball data sources. Speech playback is en
 
 ## License
 
+# run pytest
+tests/integration_tests/test_mlb.py
+
+## Advanced hitting stats
+
+Ask Vin for a batter's weighted on-base average (wOBA) and expected wOBA
+(xwOBA), for example, “What were Shohei Ohtani's wOBA and xwOBA in 2025?”
+
+`retrieve_advanced_hitting_stats` takes an MLBAM player ID and a season.
+It returns Baseball Savant's regular-season wOBA, xwOBA, and plate appearances
+for seasons from 2015 onward. Active-season figures are season to date. In a
+matchup report, these figures describe the batter's overall season performance.
 [MIT](LICENSE)

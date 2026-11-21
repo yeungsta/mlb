@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
 
 from langchain.tools import tool
+from pandas import notna
 
 from pybaseball import  playerid_lookup
 from pybaseball import  statcast_pitcher
 from pybaseball import  statcast_batter, statcast_batter_exitvelo_barrels
-from pybaseball import cache
+from pybaseball import cache, statcast_batter_expected_stats
 
 cache.enable()
 
@@ -76,6 +77,32 @@ def retrieve_pitcher_pitch_type_stats_past_year(todays_dt: str, mlbam_id: int) -
 
     # print(pitch_type_stats.to_dict())
     return pitch_type_stats.to_dict()
+
+@tool
+def retrieve_advanced_hitting_stats(mlbam_id: int, season: int) -> dict:
+    """Retrieve a batter's regular-season wOBA, expected wOBA (xwOBA), and plate appearances by MLBAM ID and four-digit season. Baseball Savant covers seasons from 2015 onward. This tool returns season totals to date for an active season."""
+    result = {"mlbam_id": mlbam_id, "season": season, "source": "Baseball Savant"}
+    if season < 2015:
+        return {**result, "error": "Baseball Savant expected stats are available from 2015 onward."}
+
+    leaderboard = statcast_batter_expected_stats(season, minPA=1)
+    if leaderboard.empty:
+        return {**result, "error": "No Baseball Savant hitting stats found for this season."}
+
+    player = leaderboard.loc[
+        (leaderboard["player_id"] == mlbam_id) & (leaderboard["year"] == season)
+    ]
+    if player.empty:
+        return {**result, "error": "No Baseball Savant hitting stats found for this player and season."}
+
+    stats = player.iloc[0]
+    return {
+        **result,
+        "plate_appearances": int(stats["pa"]),
+        "woba": float(stats["woba"]) if notna(stats["woba"]) else None,
+        "xwoba": float(stats["est_woba"]) if notna(stats["est_woba"]) else None,
+    }
+
 
 @tool
 def retrieve_batter_exit_velo_stats(start_dt: str, end_dt: str, mlbam_id: int) -> dict:
