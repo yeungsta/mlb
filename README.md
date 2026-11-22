@@ -49,7 +49,9 @@ npm run dev
 
 Open [localhost:5173](http://localhost:5173). Pick an example to fill the composer, edit it, then send it. The chat shows live progress, the finished analysis, retrieved stats, and the tool calls from each run. Follow-ups use the current LangGraph thread. **New chat** starts a fresh thread.
 
-HTML reports continue to be saved locally. To enable Gmail delivery, set `VIN_AI_EMAIL_ENABLED=1`, `VIN_AI_SMTP_SENDER`, `VIN_AI_SMTP_APP_PASSWORD`, and `VIN_AI_SMTP_RECIPIENT` in the backend environment.
+HTML reports continue to be saved locally. To send a report from chat, select **Email this report** and enter one recipient before sending the prompt. The option starts off for each prompt, and the chat shows the delivery result.
+
+To enable Gmail delivery, set `VIN_AI_EMAIL_ENABLED=1`, `VIN_AI_SMTP_SENDER`, and `VIN_AI_SMTP_APP_PASSWORD` in the backend environment. Studio and Python runs can still use `VIN_AI_SMTP_RECIPIENT` as their default when no recipient choice is passed. A chat run always sends its own choice.
 
 ### Example prompts
 

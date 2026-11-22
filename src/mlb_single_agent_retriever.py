@@ -24,7 +24,7 @@ from tools.pybaseball_tools import (
     retrieve_pitcher_pitch_type_stats_past_year,
 )
 from tools.statsapi_tools import retrieve_current_player_id, game_info, retrieve_game_id, retrieve_season_hitting_stats, retrieve_season_pitching_stats, starting_lineups
-from models.state import MatchupSynthesis, State
+from models.state import MatchupSynthesis, ReportContext, State
 from nodes.report_compiler import report_compiler
 
 # LLMs
@@ -230,7 +230,7 @@ def continue_tool_usage(state: MessagesState) -> str:
 
 def build_graph():
     # Build workflow
-    graph = StateGraph(State)
+    graph = StateGraph(State, context_schema=ReportContext)
 
     # Add nodes
     graph.add_node("stat_retrieval", stat_retrieval)

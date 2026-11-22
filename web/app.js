@@ -1,7 +1,10 @@
 import { Client } from "@langchain/langgraph-sdk/client";
 import DOMPurify from "dompurify";
 import { marked } from "marked";
+import vinScullyPhoto from "../src/templates/vin_scully.webp";
 import "./styles.css";
+
+document.querySelector(".header-photo").src = vinScullyPhoto;
 
 const client = new Client({
   apiUrl: new URL("/langgraph", window.location.origin).href,
@@ -20,6 +23,23 @@ const conversation = document.querySelector("#conversation");
 const answerTemplate = document.querySelector("#answer-template");
 const send = document.querySelector("#send");
 const newChat = document.querySelector("#new-chat");
+const emailReport = document.querySelector("#email-report");
+const emailFields = document.querySelector("#email-fields");
+const emailRecipient = document.querySelector("#email-recipient");
+
+function syncEmailFields() {
+  emailFields.hidden = !emailReport.checked;
+  emailRecipient.disabled = !emailReport.checked;
+  emailRecipient.required = emailReport.checked;
+}
+
+function resetComposer() {
+  composer.reset();
+  syncEmailFields();
+}
+
+emailReport.addEventListener("change", syncEmailFields);
+syncEmailFields();
 
 let threadId;
 let running = false;
@@ -39,7 +59,7 @@ for (const [label, example] of starters) {
 newChat.addEventListener("click", () => {
   threadId = undefined;
   conversation.replaceChildren();
-  prompt.value = "";
+  resetComposer();
   prompt.focus();
 });
 
@@ -65,12 +85,13 @@ function addTrace(answer, text) {
 composer.addEventListener("submit", async (event) => {
   event.preventDefault();
   const question = prompt.value.trim();
-  if (running || !question) return;
+  if (running || !question || !composer.reportValidity()) return;
+  const recipient = emailReport.checked ? emailRecipient.value.trim() : null;
 
   running = true;
   send.disabled = true;
   newChat.disabled = true;
-  prompt.value = "";
+  resetComposer();
 
   const userMessage = document.createElement("p");
   userMessage.className = "question";
@@ -82,7 +103,7 @@ composer.addEventListener("submit", async (event) => {
   conversation.append(userMessage, answer);
   userMessage.scrollIntoView({ block: "nearest" });
 
-  const result = { title: "", summary: "", stats: "" };
+  const result = { title: "", summary: "", stats: "", emailStatus: "" };
   const setProgress = (message, value) => {
     if (status.textContent !== message) status.textContent = message;
     if (typeof value === "number") progress.value = value * 100;
@@ -96,6 +117,7 @@ composer.addEventListener("submit", async (event) => {
 
     const stream = client.runs.stream(threadId, "vin-ai", {
       input: { messages: [{ type: "human", content: question }] },
+      context: { report_email: recipient },
       streamMode: ["custom", "updates"],
     });
 
@@ -106,6 +128,10 @@ composer.addEventListener("submit", async (event) => {
 
       if (kind === "custom" && typeof data?.message === "string") {
         setProgress(data.message, data.progress);
+      }
+
+      if (kind === "custom" && data?.type === "report_email") {
+        result.emailStatus = data.status;
       }
 
       if (kind !== "updates") continue;
@@ -141,6 +167,19 @@ composer.addEventListener("submit", async (event) => {
       setProgress("Report complete", 1);
     } else {
       setProgress(result.stats ? "Retrieved stats · No report generated" : "No report generated", 1);
+    }
+
+    if (recipient) {
+      const emailStatus = answer.querySelector(".email-status");
+      const outcomes = {
+        sent: `Report emailed to ${recipient}.`,
+        unavailable: "Email delivery is unavailable on this server.",
+        invalid: "Report email could not be sent. Check the recipient address.",
+        failed: "Report email could not be sent.",
+      };
+      emailStatus.textContent = outcomes[result.emailStatus]
+        ?? (result.summary ? "Email delivery was not confirmed." : "No report was emailed.");
+      emailStatus.hidden = false;
     }
 
     if (result.stats) {

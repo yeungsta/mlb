@@ -9,11 +9,13 @@
   <body>
     <main class="workspace">
       <header class="header">
-        <div>
-          <h1>Vin <span>AI</span></h1>
+        <div class="header-copy">
+          <h1>Vin AI</h1>
           <p>Baseball matchup chat</p>
+          <button id="new-chat" class="secondary" type="button">New chat</button>
         </div>
-        <button id="new-chat" class="secondary" type="button">New chat</button>
+        <img class="header-photo" width="800" height="453"
+             alt="Vin Scully holding a Dodgers microphone">
       </header>
 
       <section class="starters" aria-labelledby="starters-title">
@@ -29,6 +31,17 @@
           <textarea id="prompt" rows="2" required placeholder="Ask about a player, matchup, or game"></textarea>
           <button id="send" type="submit">Send</button>
         </div>
+        <div class="email-options">
+          <label class="email-toggle">
+            <input id="email-report" type="checkbox">
+            Email this report
+          </label>
+          <div id="email-fields" hidden>
+            <label for="email-recipient">Recipient email</label>
+            <input id="email-recipient" type="email" autocomplete="email" maxlength="254"
+                   placeholder="name@example.com" disabled>
+          </div>
+        </div>
       </form>
 
       <template id="answer-template">
@@ -39,6 +52,7 @@
           </div>
           <h2 class="report-title" hidden></h2>
           <div class="report"></div>
+          <p class="email-status" role="status" hidden></p>
           <details class="stats" hidden>
             <summary>Retrieved stats</summary>
             <div class="stats-content"></div>

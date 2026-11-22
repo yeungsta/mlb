@@ -1,6 +1,6 @@
 :root {
-  color: #182c25;
-  background: #edf1ed;
+  color: #142844;
+  background: #edf3fb;
   font-family: system-ui, sans-serif;
   line-height: 1.55;
   font-synthesis: none;
@@ -19,29 +19,59 @@ body { margin: 0; }
 }
 
 .header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: clamp(1.25rem, 4vw, 2rem);
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  min-height: 14rem;
+  overflow: hidden;
   border-radius: 1rem;
-  background: #15382c;
+  background: #005a9c;
   color: #fff;
+}
+
+.header-copy {
+  position: relative;
+  align-self: center;
+  padding: clamp(1.25rem, 5vw, 3rem);
+  z-index: 1;
+}
+
+.header-photo {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: 57%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 57% 30%;
+}
+
+.header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #005a9c 40%, transparent 65%);
 }
 
 h1, h2, p { margin: 0; }
 
 h1 {
-  font-size: clamp(2rem, 7vw, 3.25rem);
-  line-height: 1.05;
-  letter-spacing: -.055em;
+  font-size: clamp(2.75rem, 7vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -.065em;
 }
 
-h1 span { color: #bce98b; }
+h1::after {
+  content: "";
+  display: block;
+  width: 2.5rem;
+  height: .2rem;
+  margin-top: .65rem;
+  background: #ef3f48;
+}
 
 .header p {
-  margin-top: .4rem;
-  color: #e1eee4;
+  margin: .65rem 0 1.1rem;
+  color: #eef6ff;
 }
 
 h2 { font-size: 1.125rem; }
@@ -53,27 +83,27 @@ h2 { font-size: 1.125rem; }
   margin-top: .75rem;
 }
 
-button, textarea { font: inherit; }
+button, textarea, input { font: inherit; }
 
 button {
   border: 1px solid transparent;
   border-radius: .5rem;
   padding: .55rem .9rem;
-  background: #175640;
+  background: #005a9c;
   color: #fff;
   font-weight: 650;
   cursor: pointer;
 }
 
-button:hover { background: #0c3e2e; }
+button:hover { background: #004478; }
 
 .secondary {
-  border-color: #a7b8ac;
+  border-color: #a5b9d6;
   background: #fff;
-  color: #15382c;
+  color: #073363;
 }
 
-.secondary:hover { background: #e0eadd; }
+.secondary:hover { background: #e4efff; }
 
 button:disabled {
   opacity: .55;
@@ -81,11 +111,11 @@ button:disabled {
 }
 
 :focus-visible {
-  outline: 3px solid #34734e;
+  outline: 3px solid #236bb7;
   outline-offset: 3px;
 }
 
-.header button:focus-visible { outline-color: #bce98b; }
+.header button:focus-visible { outline-color: #d7e9ff; }
 
 .conversation {
   display: grid;
@@ -96,7 +126,7 @@ button:disabled {
 .conversation:empty { display: none; }
 
 .question, .answer, #composer {
-  border: 1px solid #c9d5cb;
+  border: 1px solid #c9d7ea;
   border-radius: .8rem;
   padding: 1rem;
   min-width: 0;
@@ -106,7 +136,7 @@ button:disabled {
 .question {
   justify-self: end;
   max-width: 90%;
-  background: #dce9d9;
+  background: #dbeaff;
   white-space: pre-wrap;
 }
 
@@ -117,11 +147,11 @@ button:disabled {
   align-items: center;
   flex-wrap: wrap;
   gap: .75rem;
-  color: #3d5749;
+  color: #425b7b;
   font-size: .9375rem;
 }
 
-progress { accent-color: #175640; }
+progress { accent-color: #005a9c; }
 
 .report-title {
   margin-top: .5rem;
@@ -135,14 +165,14 @@ progress { accent-color: #175640; }
 table { border-collapse: collapse; }
 
 td, th {
-  border: 1px solid #c9d5cb;
+  border: 1px solid #c9d7ea;
   padding: .35rem .6rem;
   text-align: left;
 }
 
 details {
   margin-top: .75rem;
-  border-top: 1px solid #dce4dc;
+  border-top: 1px solid #dce6f5;
   padding-top: .55rem;
 }
 
@@ -161,12 +191,57 @@ summary {
   margin-top: .35rem;
 }
 
-textarea {
+textarea, input[type="email"] {
   width: 100%;
-  border: 1px solid #8da397;
+  border: 1px solid #869fbf;
   border-radius: .5rem;
   padding: .55rem .65rem;
   color: inherit;
   background: #fff;
-  resize: vertical;
+}
+
+textarea { resize: vertical; }
+
+.email-options {
+  display: grid;
+  gap: .65rem;
+  margin-top: .85rem;
+}
+
+.email-toggle {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  width: fit-content;
+  cursor: pointer;
+}
+
+.email-toggle input {
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  accent-color: #005a9c;
+}
+
+#email-fields { max-width: 25rem; }
+
+#email-fields input { margin-top: .25rem; }
+
+.email-status {
+  margin-top: .65rem;
+  color: #425b7b;
+  font-size: .9375rem;
+}
+
+@media (max-width: 35rem) {
+  .header { grid-template-columns: 1fr; }
+
+  .header-photo {
+    position: static;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 8;
+  }
+
+  .header::after { display: none; }
 }

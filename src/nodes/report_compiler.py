@@ -7,6 +7,8 @@ WeasyPrint requires system libraries that not all environments have).
 """
 
 from datetime import datetime, timezone
+from email.errors import HeaderParseError
+from email.headerregistry import Address
 from email.message import EmailMessage
 import os
 import smtplib
@@ -18,7 +20,9 @@ import jinja2
 import pandas as pd
 import pytz
 
-from models.state import ResearchState, State
+from langgraph.runtime import Runtime
+
+from models.state import ReportContext, State
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 OUTPUT_DIR = Path(__file__).resolve().parent.parent.parent/ "reports"
@@ -59,8 +63,7 @@ def _build_summary_table_html(analysis) -> str:
     return styled.to_html()
 
 
-# def report_compiler(state: ResearchState) -> dict:
-def report_compiler(state: State) -> dict:
+def report_compiler(state: State, runtime: Runtime[ReportContext] | None = None) -> dict:
     if not state.get("title"):
         return {"final_report_html": ""}
     
@@ -171,30 +174,46 @@ def report_compiler(state: State) -> dict:
     html_path.write_text(html, encoding="utf-8")
     print(f"  ✓ Report saved: {html_path}")
 
-    if os.getenv("VIN_AI_EMAIL_ENABLED") == "1":
-        send_report_email(title, html)
+    context = runtime.context if runtime and runtime.context else {}
+    enabled = os.getenv("VIN_AI_EMAIL_ENABLED") == "1"
+    default_recipient = os.getenv("VIN_AI_SMTP_RECIPIENT") if enabled else None
+    recipient = context.get("report_email", default_recipient)
+    if recipient is not None:
+        status = send_report_email(title, html, recipient) if enabled else "unavailable"
+        if runtime:
+            runtime.stream_writer({"type": "report_email", "status": status})
 
     return {}
 
 
-def send_report_email(title: str, html: str) -> None:
+def send_report_email(title: str, html: str, recipient: str) -> str:
     sender = os.getenv("VIN_AI_SMTP_SENDER")
     password = os.getenv("VIN_AI_SMTP_APP_PASSWORD")
-    recipient = os.getenv("VIN_AI_SMTP_RECIPIENT")
-    if not all((sender, password, recipient)):
-        print("Email skipped: configure the SMTP sender, app password, and recipient.")
-        return
+    if not sender or not password:
+        return "unavailable"
+
+    if not isinstance(recipient, str) or not 0 < len(recipient) <= 254:
+        return "invalid"
+
+    try:
+        address = Address(addr_spec=recipient)
+        if not address.username or not address.domain:
+            return "invalid"
+    except (HeaderParseError, ValueError):
+        return "invalid"
 
     message = EmailMessage()
-    message["Subject"] = f"⚾️ {title}"
+    message["Subject"] = "⚾️ " + " ".join(title.splitlines())
     message["From"] = sender
-    message["To"] = recipient
+    message["To"] = address
     message.add_alternative(html, subtype="html")
 
     try:
         with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15) as smtp:
             smtp.login(sender, password)
-            smtp.send_message(message)
+            smtp.send_message(message, to_addrs=[address.addr_spec])
         print("Email sent successfully!")
-    except (OSError, smtplib.SMTPException) as error:
+        return "sent"
+    except OSError as error:
         print(f"Failed to send email: {type(error).__name__}")
+        return "failed"
