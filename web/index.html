@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>Vin AI · Baseball matchup chat</title>
+  </head>
+  <body>
+    <main class="workspace">
+      <header class="header">
+        <div class="header-copy">
+          <h1>Vin AI</h1>
+          <p>Baseball matchup chat</p>
+          <button id="new-chat" class="secondary" type="button">New chat</button>
+        </div>
+        <img class="header-photo" width="800" height="453"
+             alt="Vin Scully holding a Dodgers microphone">
+      </header>
+
+      <section class="starters" aria-labelledby="starters-title">
+        <h2 id="starters-title">Try a matchup or look up a game</h2>
+        <div id="starters"></div>
+      </section>
+
+      <section id="conversation" class="conversation" aria-label="Conversation" role="log"></section>
+
+      <form id="composer">
+        <label for="prompt">Ask Vin AI</label>
+        <div class="composer-row">
+          <textarea id="prompt" rows="2" required placeholder="Ask about a player, matchup, or game"></textarea>
+          <button id="send" type="submit">Send</button>
+        </div>
+        <div class="email-options">
+          <label class="email-toggle">
+            <input id="email-report" type="checkbox">
+            Email this report
+          </label>
+          <div id="email-fields" hidden>
+            <label for="email-recipient">Recipient email</label>
+            <input id="email-recipient" type="email" autocomplete="email" maxlength="254"
+                   placeholder="name@example.com" disabled>
+          </div>
+        </div>
+      </form>
+
+      <template id="answer-template">
+        <article class="answer">
+          <div class="run-progress" role="status" aria-atomic="true">
+            <span class="status"></span>
+            <progress max="100" aria-label="Report progress"></progress>
+          </div>
+          <h2 class="report-title" hidden></h2>
+          <div class="report"></div>
+          <p class="email-status" role="status" hidden></p>
+          <details class="stats" hidden>
+            <summary>Retrieved stats</summary>
+            <div class="stats-content"></div>
+          </details>
+          <details class="trace" hidden>
+            <summary>Run details</summary>
+            <ul></ul>
+          </details>
+        </article>
+      </template>
+    </main>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

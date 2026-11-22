@@ -2,14 +2,14 @@
 
 **Turn a baseball question into a scouting report backed by MLB Stats API and Statcast data.** Vin AI is a Python and LangGraph agent that looks up players and games, compares pitchers with hitters, and writes HTML reports in a Vin Scully-inspired voice.
 
-[Quick start](#quick-start) · [Example prompts](#example-prompts) · [Python example](#run-from-python) · [Codebase map](#codebase-map) · [Tests](#tests)
+[Quick start](#quick-start) · [Chat playground](#chat-playground) · [Example prompts](#example-prompts) · [Python example](#run-from-python) · [Codebase map](#codebase-map) · [Tests](#tests)
 
 ## What you can analyze
 
 | Feature | What the agent looks up |
 | --- | --- |
 | Pitcher scouting | Current-season pitching totals and trailing-year Statcast pitch-type metrics |
-| Hitter scouting | Current-season batting totals and trailing-year Statcast exit-velocity metrics |
+| Hitter scouting | Current-season batting totals, trailing-year Statcast exit velocity, and season wOBA and xwOBA |
 | Batter vs. pitcher | Historical head-to-head Statcast data, using MLBAM IDs resolved from player names |
 | Starting pitcher vs. a lineup | The game, opposing batting order, individual player stats, and historical matchups against lineup hitters |
 | Game lookup | Scheduled start time, game status, probable starters, and published lineups for a team and date |
@@ -19,36 +19,39 @@ Probable starters and lineups depend on what MLB has published for the game. His
 
 ## Quick start
 
-You'll need [uv](https://docs.astral.sh/uv/), Python 3.13 or later, and a model that supports tool calling. The default setup uses a local [Ollama](https://ollama.com/) server and the `gpt-oss:120b-cloud` model. The cloud model requires an authenticated Ollama account.
+You'll need [uv](https://docs.astral.sh/uv/), Python 3.13 or later, and a model that supports tool calling. The default model provider is OpenRouter.
 
 ```bash
 git clone https://github.com/yeungsta/mlb.git
 cd mlb
 uv sync --locked
-ollama signin
-ollama pull gpt-oss:120b-cloud
 ```
 
 On Linux, building the `simpleaudio` development dependency requires a C compiler, Python development headers, and ALSA development headers. For a text-only setup, use `uv sync --locked --no-install-package simpleaudio` and add `--no-sync` after `uv run` in the commands below. If your home directory is read-only, set `PYBASEBALL_CACHE` to a writable directory before starting the graph.
 
-Start Ollama with `ollama serve` in a separate terminal if the server is down. For a different Ollama model, update `OLLAMA_MODEL` in [the model configuration](src/llm/get_llm.py) and pull that model. The same module has an OpenRouter option (`USE_OLLAMA = False`, with `OPENROUTER_API_KEY`) and experimental Gemini helpers.
+Create a `.env` file in the repository root and set `OPENROUTER_API_KEY`. For optional LangSmith tracing, set `LANGSMITH_TRACING=true`, `LANGSMITH_PROJECT=baseball_matchup`, and `LANGSMITH_API_KEY`. To use [Ollama](https://ollama.com/), set `USE_OLLAMA = True` in [the model configuration](src/llm/get_llm.py) and start Ollama with the configured model.
 
-Create a `.env` file in the repository root. For optional LangSmith tracing, add the following and replace the placeholder with your key.
-
-```dotenv
-LANGSMITH_TRACING=true
-LANGSMITH_PROJECT=baseball_matchup
-LANGSMITH_API_KEY=your-langsmith-key
-```
-
-> [!IMPORTANT]
-> Generating a report saves an HTML file and attempts Gmail SMTP delivery to the recipient configured in the [report compiler](src/nodes/report_compiler.py). Review that code before running the graph or integration tests. Disable the SMTP block for local-only runs.
-
-Start the development server and open the Studio URL printed in the terminal. Choose **vin-ai** and enter a prompt in the graph's `messages` input.
+Start the development server. You can open the Studio URL printed in the terminal, choose **vin-ai**, and enter a prompt in `messages`.
 
 ```bash
-uv run langgraph dev --allow-blocking
+uv run langgraph dev --allow-blocking --no-browser
 ```
+
+## Chat playground
+
+With LangGraph running on port 2024, start the frontend from a second terminal. It requires Node.js 20.19+ or 22.12+.
+
+```bash
+cd web
+npm ci
+npm run dev
+```
+
+Open [localhost:5173](http://localhost:5173). Pick an example to fill the composer, edit it, then send it. The chat shows live progress, the finished analysis, retrieved stats, and the tool calls from each run. Follow-ups use the current LangGraph thread. **New chat** starts a fresh thread.
+
+HTML reports continue to be saved locally. To send a report from chat, select **Email this report** and enter one recipient before sending the prompt. The option starts off for each prompt, and the chat shows the delivery result.
+
+To enable Gmail delivery, set `VIN_AI_EMAIL_ENABLED=1`, `VIN_AI_SMTP_SENDER`, and `VIN_AI_SMTP_APP_PASSWORD` in the backend environment. Studio and Python runs can still use `VIN_AI_SMTP_RECIPIENT` as their default when no recipient choice is passed. A chat run always sends its own choice.
 
 ### Example prompts
 
@@ -64,7 +67,7 @@ Completed reports are saved under `reports/MM-DD-YYYY/<title>.html`. Open the fi
 
 ## Run from Python
 
-From the repository root, invoke the same graph directly. The example uses the default local Ollama connection.
+From the repository root, invoke the same graph directly. Set the configured model provider’s credentials in the Python process environment before invoking the graph.
 
 ```bash
 uv run python - <<'PY'
@@ -92,6 +95,7 @@ The main graph loops between the model and its data tools until it has a stats s
 | [src/llm/get_llm.py](src/llm/get_llm.py) | Model factories and settings for tool calling and report writing |
 | [src/models/state.py](src/models/state.py) | Graph state and structured report and research models |
 | [src/nodes/report_compiler.py](src/nodes/report_compiler.py) · [src/templates/](src/templates/) | Markdown-to-HTML rendering, report layout, and local output |
+| [web/](web/) | Chat playground and local proxy to the LangGraph API |
 | [src/api/](src/api/) | Schedule helpers and a standalone Statcast analysis script |
 | [src/examples/](src/examples/) | Small LangGraph demos for arithmetic tool calls, parallel fan-out and fan-in, and a minimal model call |
 | [langgraph.json](langgraph.json) · [langgraph.json.dev](langgraph.json.dev) · [Dockerfile](Dockerfile) | Default graph registration, experimental graph registration, and a Python 3.13 LangGraph container definition |
