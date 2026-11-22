@@ -220,10 +220,13 @@ def continue_tool_usage(state: MessagesState) -> str:
 
     # If the LLM makes a tool call, then perform an action
     if last_message.tool_calls: # pyright: ignore[reportAttributeAccessIssue]
-        return "Pass"
+        return "Continue"
 
-    # Otherwise, we stop (reply to the user)
-    return "Fail"
+    # check all messages to see if any tool calls were made at all and if there are results to synthesize, otherwise finish the workflow
+    for msg in messages:
+        if hasattr(msg, 'tool_calls') and msg.tool_calls:
+            return "Synthesize"
+    return "Finish"
 
 def build_graph():
     # Build workflow
@@ -243,7 +246,7 @@ def build_graph():
     graph.add_conditional_edges(
         "stat_retrieval",
         continue_tool_usage,
-        { "Pass": "tool_caller", "Fail": "matchup_synthesizer"}
+        { "Continue": "tool_caller", "Synthesize": "matchup_synthesizer", "Finish": END }
     )
     graph.add_edge("tool_caller", "stat_retrieval")  #after performing the tool call, we go back to the kickoff node to allow for additional tool calls if necessary (e.g. if the LLM needs to look up additional players or stats)
 
@@ -254,15 +257,3 @@ def build_graph():
     graph.add_edge("report_compiler", END)
 
     return graph.compile()
-
-# Invoke from user input
-# messages = [HumanMessage(content="Analyze Alex Vesia's stats")]
-# state = build_graph().invoke({"messages": messages}) # pyright: ignore[reportArgumentType]
-# for m in state["messages"]:
-#     m.pretty_print()
-# print(f"\nSummary:\n{state["summary"]}")
-
-# test report generation
-# state = report_compiler({"messages": [], "title": "Report Title", "summary": "summary text here", 
-#                          "stats_summary": [HumanMessage(content="stats here")], "llm_model": "llm here"})
-
